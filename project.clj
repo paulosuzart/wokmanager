@@ -10,5 +10,6 @@
 				 [ring/ring-devel "1.1.6"]
                  [compojure "1.1.4"]
                  [org.clojure/data.json "0.2.0"]
-				 [lamina "0.4.1"]]
+				 [lamina "0.4.1"]
+  				 [hiccup "1.0.2"]]
   :plugins [[lein-ring "0.7.5"]])
