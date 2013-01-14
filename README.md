@@ -1,10 +1,10 @@
-# wokmanager
+# WOKManager (Ultra Alpha stage)
 
 WOKManager is intended to be a simple worker manager. That is, you have lots of workers running in several machines/languages but you are blind because you don't know which one is running.
 
 This is extremely early stages of a server that will allows you to track the execution of workers usually listening to queues.
 
-## How data is stored
+## How data are stored
 
 Now the data are store into simple clojure data structures (maps):
 
