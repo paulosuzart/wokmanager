@@ -1,0 +1,10 @@
+curl -H "Content-Type: application/json" -v -X POST -d '{"id" : "Importer1d", "group" : "product.importer", "event" : "started", "at" : "now"}' http://localhost:5000/worker/state?api-key=231cooai1d
+
+curl -H "Content-Type: application/json" -v -X POST -d '{"id" : "Importer1d", "group" : "product.importer", "event" : "stopped", "at" : "now"}' http://localhost:5000/worker/state?api-key=231cooai1d
+
+
+curl -H "Content-Type: application/json" -v -X POST -d '{"id" : "Importer1d", "group" : "product.importer", "event" : "stopped", "at" : "now"}' http://localhost:5000/worker/state?api-key=231cooai1d
+
+curl -H "Content-Type: application/json" -v -X GET -d '{"id" : "*"}' http://localhost:5000/worker/state?api-key=231cooai1d
+
+curl -H "Content-Type: application/json" -v -X POST -d '{"group" : "product.importer"}' http://localhost:5000/worker/state?api-key=231cooai1d
