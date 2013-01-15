@@ -10,30 +10,33 @@
             [clojure.java.io :as io]
             [lamina.core :as l]
             [wokmanager.utils :as u]
-            [wokmanager.view :as v]))
+            [wokmanager.view :as v]
+            [clj-time.core :as t]
+            [clj-time.coerce :as tc]))
 
 (def stream-channel (l/channel))
 
-(def workers (ref {"Importer01" {"worker" "Importer1d" "group" "product.importer"}}))
+(def workers (ref {"Importer1d" {"worker" "Importer1d" "group" "product.importer"}}))
 
 (def message-stream (ref [{"worker"  "Importer1d"
 	                       "group"   "product.importer"
 	                       "event"   "started"
-	                       "content" ""}
+	                       "content" ""
+	                       "at"      "2013-01-15T23:40:03.452Z"}
 	                      {"worker"  "Importer1d"
 	                       "group"   "product.importer"
 	                       "event"   "processing"
-	                       "content" "Processing SKU 2522"}
+	                       "content" "Processing SKU 2522"
+	                       "at"      "2013-01-15T23:41:03.452Z"}
 	                      {"worker"  "Importer1d"
 	                        "group"   "product.importer"
 	                        "event"   "failure"
-	                        "content" "Failed while processing SKU 2522"}]))
+	                        "content" "Failed while processing SKU 2522"
+	                        "at"      "2013-01-15T23:41:03.452Z"}]))
 
 (defmulti register-state (fn [msg] (get msg "event")))
 
 (defmethod register-state "started"
-    "Registers a Worker in the `workers` ref if the
-     message event is `started`"
     [msg]
     (println "Registering Started Event")
     (dosync 
@@ -52,8 +55,6 @@
     (println "ALL WORKERS " @workers))
 
 (defmethod register-state "stopped"
-    "Registers a Worker in the `workers` ref if the
-     message event is `stopped`"
     [msg]
     (println "Registering Started Event")
     (dosync 
@@ -72,9 +73,11 @@
           (alter message-stream merge {worker [msg]})))
       (println "MESSAGE TAIL " @message-stream)))
 
-(defn process-message [request msg]
-  (l/enqueue stream-channel msg)
-  {:status 200})
+(defn process-message 
+  "Adds the `at` attribute to the message and enqueues it."
+ [request msg]
+   (l/enqueue stream-channel (merge msg {"at" (tc/to-string (t/now))}))
+   {:status 200})
   
 (l/receive-all stream-channel #(register-message %))
 (l/receive-all stream-channel #(and (#{"started" "stopped"} (get %1 "event")) (register-state %1)))

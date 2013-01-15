@@ -11,5 +11,8 @@
                  [compojure "1.1.4"]
                  [org.clojure/data.json "0.2.0"]
 				 [lamina "0.4.1"]
-  				 [hiccup "1.0.2"]]
+  				 [hiccup "1.0.2"]
+				 [clj-time "0.4.4"]]
+  :profiles {:dev {:dependencies  [[ring-mock "0.1.3"]]}}
   :plugins [[lein-ring "0.7.5"]])
+
