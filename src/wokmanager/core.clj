@@ -12,76 +12,74 @@
             [wokmanager.utils :as u]
             [wokmanager.view :as v]))
 
+(def stream-channel (l/channel))
 
-(def worker-domains (ref {"product" 
-                        {"importer" ["Importer01"]}
-                     "price" {"promotion" ["Promo01" "Promo02"]}}))
+(def workers (ref {"Importer01" {"worker" "Importer01" "group" "product.importer"}}))
 
-(def workers (ref {"Importer01" {"id" "Importer01" "group" "product.importer"}}))
+(def message-stream (ref [{"worker"  "Importer1d"
+	                       "group"   "product.importer"
+	                       "event"   "started"
+	                       "content" ""}
+	                      {"worker"  "Importer1d"
+	                       "group"   "product.importer"
+	                       "event"   "processing"
+	                       "content" "Processing SKU 2522"}
+	                      {"worker"  "Importer1d"
+	                        "group"   "product.importer"
+	                        "event"   "failure"
+	                        "content" "Failed while processing SKU 2522"}]))
 
-(def messages (ref {"Importer01" 
-					    [{"id"    "Importer1d" 
-	                      "group" "product.importer" 
-	                      "event" "started"
-	                      "at"    "now"}]}))
-
-(def all-messages (ref [{"id"    "Importer1d" 
-	                     "group" "product.importer" 
-	                     "event" "started"
-	                     "at"    "now"}]))
-
-(def errors (ref [{"Importer01" {"message" "Error processing Procut21" "action" "logged"}}]))
-
-(defmulti register-state (fn [_ msg] (get msg "event")))
+(defmulti register-state (fn [msg] (get msg "event")))
 
 (defmethod register-state "started"
-    [request msg]
+    [msg]
+    (println "Registering Started Event")
     (dosync 
-        (if-let [worker (get @workers (get msg "id"))]
+        (or 
+	      (and 
+		    (get @workers (get msg "worker"))
             (alter workers update-in 
-                                [(get msg "id")]
+                                [(get msg "worker")]
                                 (fn [w]
-                                    {"id" (get msg "id") 
-                                     "group" (get msg "group")}))
+                                    {"worker" (get msg "worker") 
+                                     "group" (get msg "group")})))
             (alter workers merge
-                                {(get msg "id")
-                                {"id" (get msg "id")
+                                {(get msg "worker")
+                                {"worker" (get msg "worker")
                                  "group" (get msg "group")}})))
-    (println @workers)
-    (u/json-> 200 {:registered (get msg "event")
-                     :at "now"}))
+    (println "ALL WORKERS " @workers))
 
 (defmethod register-state "stopped"
-    [request msg]
+    [msg]
+    (println "Registering Started Event")
     (dosync 
-        (if (get @workers (get msg "id"))
-            (do 
-                (alter workers dissoc (get msg "id"))
-                (u/json-> 200 {:registered (get msg "event")
-                               :at "now"}))
-            (u/json-> 404 {"error" "no such worker registered"}))))
+          (and (get @workers (get msg "worker"))
+               (alter workers dissoc (get msg "worker"))))
+    (println "ALL WORKERS" @workers))
             
-(defn register-message [request msg]
-	(let [id (get msg "id")]
+(defn register-message [msg]
+	(let [worker (get msg "worker")]
       (dosync 
         (or 
-          (and (get @messages id)
-               (alter messages update-in [id] (fn [ms] (cons msg ms))))
-          (alter messages merge {id [msg]}))
-        (alter all-messages #(cons msg %)))))
+          (and (get @message-stream worker)
+               (alter message-stream update-in [worker] (fn [ms] (cons msg ms))))
+          (alter message-stream merge {worker [msg]})))
+      (println "MESSAGE TAIL " @message-stream)))
 
-(defn process-state [request msg]
-  (do 
-	(register-message request msg)
-	(register-state request msg)))
+(defn process-message [request msg]
+  (l/enqueue stream-channel msg)
+  {:status 200})
+  
+(l/receive-all stream-channel #(register-message %))
+(l/receive-all stream-channel #(and (#{"started" "stopped"} (get %1 "event")) (register-state %1)))
 
 
 (defn query-state [request query]
-    (letfn [(by-id [q] 
-                (if (= "*" (get q "id"))
+    (letfn [(by-worker [q] 
+                (if (= "*" (get q "worker"))
                     identity
-                    (fn [w] (= (get q "id") (get w "id")))))]
-        (u/json-> 200 (filter (by-id query) (vals @workers)))))
+                    (fn [w] (= (get q "worker") (get w "worker")))))]
+        (u/json-> 200 (filter (by-worker query) (vals @workers)))))
 
 (defn dashboard-index [request]
 	{:status 200 
@@ -89,26 +87,19 @@
 		(v/layout [:table 
                   [:thead 
                     [:tr
-                      [:th "Worker ID"] 
-                      [:th "State" "At"]
+                      [:th "Worker worker"] 
                       [:th "Group"]]
 					   (map (fn [e] 
 					  	      [:tr 
-					 	        [:td (key e)] 
-						        [:td (get (first (val e)) "event")]
-						        [:td (get-in @workers [(key e) "group"])]])  @messages)]]
-				  [:table 
-				    [:thead 
-				      [:tr [:th "Message tail"]]
-				        (map (fn [e]
-					           [:tr 
-					             [:td (json/write-str e)]]) @all-messages)]])})
+					 	        [:td (key e)]
+					            [:td (get-in @workers [(key e) "group"])]]) @workers)]])})
+
 
 (defroutes app
 	(GET "/" [] dashboard-index)
-    (context "/worker" []
-      (POST "/state" [] (u/accepting-json process-state))
-      (GET "/state" [] (u/accepting-json query-state))))
+    (context "/api" []
+      (POST "/message" [] (u/accepting-json process-message))
+      (GET "/worker" [] (u/accepting-json query-state))))
 
 (defn -main [port]
   (run-jetty (-> app
