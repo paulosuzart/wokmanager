@@ -14,7 +14,7 @@
 
 (def stream-channel (l/channel))
 
-(def workers (ref {"Importer01" {"worker" "Importer01" "group" "product.importer"}}))
+(def workers (ref {"Importer01" {"worker" "Importer1d" "group" "product.importer"}}))
 
 (def message-stream (ref [{"worker"  "Importer1d"
 	                       "group"   "product.importer"
@@ -32,6 +32,8 @@
 (defmulti register-state (fn [msg] (get msg "event")))
 
 (defmethod register-state "started"
+    "Registers a Worker in the `workers` ref if the
+     message event is `started`"
     [msg]
     (println "Registering Started Event")
     (dosync 
@@ -43,13 +45,15 @@
                                 (fn [w]
                                     {"worker" (get msg "worker") 
                                      "group" (get msg "group")})))
-            (alter workers merge
-                                {(get msg "worker")
+          (alter workers merge
+                             {(get msg "worker")
                                 {"worker" (get msg "worker")
                                  "group" (get msg "group")}})))
     (println "ALL WORKERS " @workers))
 
 (defmethod register-state "stopped"
+    "Registers a Worker in the `workers` ref if the
+     message event is `stopped`"
     [msg]
     (println "Registering Started Event")
     (dosync 
@@ -57,7 +61,9 @@
                (alter workers dissoc (get msg "worker"))))
     (println "ALL WORKERS" @workers))
             
-(defn register-message [msg]
+(defn register-message 
+    "Registers a message in the `message-stream` vector"
+    [msg]
 	(let [worker (get msg "worker")]
       (dosync 
         (or 
@@ -74,7 +80,10 @@
 (l/receive-all stream-channel #(and (#{"started" "stopped"} (get %1 "event")) (register-state %1)))
 
 
-(defn query-state [request query]
+(defn query-state
+    "Base on the `query` tries to filter the `workers` ref and
+    returns a json with the filtered workers"
+    [request query]
     (letfn [(by-worker [q] 
                 (if (= "*" (get q "worker"))
                     identity
