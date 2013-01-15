@@ -4,7 +4,7 @@ WOKManager is intended to be a simple worker manager. That is, you have lots of 
 
 This is extremely early stages of a server that will allows you to track the execution of workers usually listening to queues.
 
-## How data are stored
+## Concepts
 
 Now the data are store into simple clojure data structures (maps):
 
@@ -20,10 +20,23 @@ Now the data are store into simple clojure data structures (maps):
 	                           "content" "Processing SKU 2522"}
 	                          {"worker"  "Importer1d"
 	                           "group"   "product.importer"
-	                           "event"   "failure"
+	                           "event"   "failed"
 	                           "content" "Failed while processing SKU 2522"}]))
 
 At some point in time it will use a persistent storage.
+
+Every message posted to `/api/message` as the following structure:
+
+    . `worker*` - that is intended to be a unique worker name.
+    . `group*`  - the group this worker belongs to. This is used to organize all the workers like namespaces
+    . `event*`  - a message is derived from some event. Possible events are: `started`, `stoped`, `processing` and `failed`
+    . `content` - a message as any string content associated. This is useful to help you understand what the message is about.
+    . `at`      - automatically added as the message reaches the server. `2013-01-15T23:40:03.452Z`.
+
+Message attributes marked with an `*` are mandatory.
+
+All the messages that comes from a `POST` are recorded into the `message-stream` vector that acts as a tail of every event sent to WOKManager. All the remaining information are derived from this message stream such as Worker groups, and some statistics.
+
 
 ## Usage
 
