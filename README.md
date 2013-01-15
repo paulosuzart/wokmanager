@@ -10,18 +10,21 @@ Now the data are store into simple clojure data structures (maps):
 
     (def workers (ref {"Importer01" {"worker" "Importer1d" "group" "product.importer"}}))
 
-    (def message-stream (ref [{"worker"  "Importer1d"
-	                           "group"   "product.importer"
-	                           "event"   "started"
-	                           "content" ""}
-	                          {"worker"  "Importer1d"
-	                           "group"   "product.importer"
-	                           "event"   "processing"
-	                           "content" "Processing SKU 2522"}
-	                          {"worker"  "Importer1d"
-	                           "group"   "product.importer"
-	                           "event"   "failed"
-	                           "content" "Failed while processing SKU 2522"}]))
+	(def message-stream (ref [{"worker"  "Importer1d"
+		                       "group"   "product.importer"
+		                       "event"   "started"
+		                       "content" ""
+		                       "at"      "2013-01-15T23:40:03.452Z"}
+		                      {"worker"  "Importer1d"
+		                       "group"   "product.importer"
+		                       "event"   "processing"
+		                       "content" "Processing SKU 2522"
+		                       "at"      "2013-01-15T23:41:03.452Z"}
+		                      {"worker"  "Importer1d"
+		                        "group"   "product.importer"
+		                        "event"   "failure"
+		                        "content" "Failed while processing SKU 2522"
+		                        "at"      "2013-01-15T23:41:03.452Z"}]))
 
 At some point in time it will use a persistent storage.
 
