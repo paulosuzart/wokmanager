@@ -65,13 +65,9 @@
 (defn register-message 
     "Registers a message in the `message-stream` vector"
     [msg]
-	(let [worker (get msg "worker")]
       (dosync 
-        (or 
-          (and (get @message-stream worker)
-               (alter message-stream update-in [worker] (fn [ms] (cons msg ms))))
-          (alter message-stream merge {worker [msg]})))
-      (println "MESSAGE TAIL " @message-stream)))
+        (alter message-stream (fn [ms] (cons msg ms))))
+      (println "MESSAGE TAIL " @message-stream))
 
 (defn process-message 
   "Adds the `at` attribute to the message and enqueues it."
@@ -93,25 +89,13 @@
                     (fn [w] (= (get q "worker") (get w "worker")))))]
         (u/json-> 200 (filter (by-worker query) (vals @workers)))))
 
-(defn dashboard-index [request]
-	{:status 200 
-	 :body
-		(v/layout [:table 
-                  [:thead 
-                    [:tr
-                      [:th "Worker worker"] 
-                      [:th "Group"]]
-					   (map (fn [e] 
-					  	      [:tr 
-					 	        [:td (key e)]
-					            [:td (get-in @workers [(key e) "group"])]]) @workers)]])})
-
 
 (defroutes app
-	(GET "/" [] dashboard-index)
+	(GET "/" [] (fn [r] (v/dashboard-index r workers)))
     (context "/api" []
       (POST "/message" [] (u/accepting-json process-message))
-      (GET "/worker" [] (u/accepting-json query-state))))
+      (GET  "/message" [] (u/json-> 200 @message-stream))
+      (GET  "/worker" [] (u/accepting-json query-state))))
 
 (defn -main [port]
   (run-jetty (-> app

@@ -1,9 +1,12 @@
 (ns wokmanager.view
-  (:require [hiccup.core :as h]))
+  (:require [hiccup
+	         [element :refer [javascript-tag]]
+             [page :refer [include-js]]
+             [page :refer [html5]]]))
 
 
 (defn layout [& content]
-  (h/html 
+  (html5
     [:head
       [:title "WOKManager Dashboard"]
       [:style {:type "text/css"}
@@ -49,10 +52,34 @@
 	clear:both;
 	background-color:#333;
 	height:100px;
-	}"]]
+	}
+	
+	#failure {
+	background-color:red;
+	}
+    "]]
 	[:body
 	  [:div {:id "header"}
         "WOKManager Dashboard"]
         [:div {:id "center"}
           content]
-        [:div {:id "footer"}]]))
+        [:div {:id "footer"}]]
+      (list (javascript-tag "var CLOSURE_NO_DEPS = true;")
+	        (include-js "js/main.js"))))
+	
+
+(defn dashboard-index [request workers]
+	{:status 200 
+	 :body
+		(layout [:table 
+                  [:thead 
+                      [:th "Worker worker"] 
+                      [:th "Group"]]
+					   (map (fn [e] 
+					  	      [:tr 
+					 	        [:td (key e)]
+					            [:td (get-in @workers [(key e) "group"])]]) @workers)]
+				 [:table#tail
+				  [:thead [:th "Messages"]] 
+				  [:tbody]])})
+
