@@ -2,6 +2,8 @@
 	(:require [clojure.data.json :as json]
 			  [clojure.java.io :as io]))
 			
+(def handled-events ["started" "stopped" "processing" "failure"])
+
 (defn accepting-json [handler] 
 	(fn [request]
 		(handler request 

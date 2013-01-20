@@ -29329,18 +29329,21 @@ goog.require("wokmanager.server");
 goog.require("domina.css");
 goog.require("domina.xpath");
 goog.require("domina");
+wokmanager.main.row_c = function row_c(e) {
+  return cljs.core._lookup.call(null, cljs.core.ObjMap.fromObject(["started", "stopped", "processing", "failure"], {"started":"success", "stopped":"warning", "processing":"info", "failure":"error"}), e, null)
+};
 wokmanager.main.message_entry = function message_entry(e) {
   var wevent = (new cljs.core.Keyword("\ufdd0'event")).call(null, e);
   var wworker = (new cljs.core.Keyword("\ufdd0'worker")).call(null, e);
   var wat = (new cljs.core.Keyword("\ufdd0'at")).call(null, e);
   var message = cljs.core.format.call(null, "[%s] - %s. %s", wat, wevent, wworker);
-  return cljs.core.PersistentVector.fromArray(["\ufdd0'tr", cljs.core.PersistentVector.fromArray(["\ufdd0'td", message], true)], true)
+  return cljs.core.PersistentVector.fromArray(["\ufdd0'tr", cljs.core.ObjMap.fromObject(["\ufdd0'class"], {"\ufdd0'class":wokmanager.main.row_c.call(null, wevent)}), cljs.core.PersistentVector.fromArray(["\ufdd0'td", message], true)], true)
 };
 wokmanager.main.display_messages = function display_messages(data) {
   var tail = domina.xpath.xpath.call(null, "//table[@id='tail']/tbody");
   console.log([cljs.core.str(data)].join(""));
-  return domina.append_BANG_.call(null, tail, [cljs.core.str(hiccups.runtime.render_html.call(null, cljs.core.map.call(null, function(p1__4196_SHARP_) {
-    return wokmanager.main.message_entry.call(null, p1__4196_SHARP_)
+  return domina.append_BANG_.call(null, tail, [cljs.core.str(hiccups.runtime.render_html.call(null, cljs.core.map.call(null, function(p1__5319_SHARP_) {
+    return wokmanager.main.message_entry.call(null, p1__5319_SHARP_)
   }, data)))].join(""))
 };
 wokmanager.server.load_messages.call(null, null, wokmanager.main.display_messages);

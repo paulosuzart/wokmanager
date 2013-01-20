@@ -6,13 +6,20 @@
 	(:require [hiccups.runtime :as hiccupsrt])
 	(:require-macros [hiccups.core :as hiccups]))
 
+(defn row-c [e]
+	(get
+		{"started"    "success"
+		"stopped"    "warning"
+		"processing" "info"
+		"failure"    "error"}
+		e))
 
 (defn message-entry [e]
 	(let [wevent (:event e)
 		  wworker (:worker e)
 		  wat (:at e)
 		  message (format "[%s] - %s. %s" wat wevent wworker)]
-	  [:tr [:td message]]))
+	  [:tr {:class (row-c wevent)} [:td message]]))
 
 (defn display-messages [data]
   (let [tail (xpath "//table[@id='tail']/tbody")]

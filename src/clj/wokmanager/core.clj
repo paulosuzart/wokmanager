@@ -14,7 +14,15 @@
             [clj-time.core :as t]
             [clj-time.coerce :as tc]))
 
-(def stream-channel (l/channel))
+(defn init-pooling
+        [ch stream]
+        (l/receive-all ch (fn[_]))
+        (future
+            (loop [msg (l/wait-for-message stream)]
+                (l/enqueue ch (:payload msg))
+                (recur (l/wait-for-message stream)))))
+
+(def stream-channel (l/named-channel :stream-channel ini-stream))
 
 (def workers (ref {"Importer1d" {"worker" "Importer1d" "group" "product.importer"}}))
 
@@ -89,12 +97,13 @@
                     (fn [w] (= (get q "worker") (get w "worker")))))]
         (u/json-> 200 (filter (by-worker query) (vals @workers)))))
 
+(defn get-messages [request] @message-stream)
 
 (defroutes app
 	(GET "/" [] (fn [r] (v/dashboard-index r workers)))
     (context "/api" []
       (POST "/message" [] (u/accepting-json process-message))
-      (GET  "/message" [] (u/json-> 200 @message-stream))
+      (GET  "/message" [] get-messages)
       (GET  "/worker" [] (u/accepting-json query-state))))
 
 (defn -main [port]
